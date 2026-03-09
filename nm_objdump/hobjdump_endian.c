@@ -56,8 +56,6 @@ const char *get_fmt(int cls, int msb, int mach)
 	{
 		if (mach == EM_386)
 			return ("elf32-i386");
-		if (mach == EM_SPARC || mach == EM_SPARC32PLUS)
-			return ("elf32-sparc");
 		return (msb ? "elf32-big" : "elf32-little");
 	}
 	else
@@ -81,7 +79,5 @@ const char *get_arch(int mach)
 		return ("i386");
 	if (mach == EM_X86_64)
 		return ("i386:x86-64");
-	if (mach == EM_SPARC || mach == EM_SPARC32PLUS || mach == EM_SPARCV9)
-		return ("sparc");
 	return ("UNKNOWN!");
 }
