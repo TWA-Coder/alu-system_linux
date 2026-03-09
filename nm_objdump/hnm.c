@@ -3,23 +3,24 @@
 /**
  * print_syms_32 - Prints the symbols for a 32-bit ELF file.
  * @map: The mapped memory of the ELF file.
+ * @msb: Endianness flag.
  */
-void print_syms_32(void *map)
+void print_syms_32(void *map, int msb)
 {
 	Elf32_Ehdr *e = (Elf32_Ehdr *)map;
-	Elf32_Shdr *s = (Elf32_Shdr *)((char *)map + e->e_shoff);
+	Elf32_Shdr *s = (Elf32_Shdr *)((char *)map + g32(e->e_shoff, msb));
 	Elf32_Sym *sym = NULL;
 	char *str = NULL, *name;
 	int num = 0, i;
 	char type;
 
-	for (i = 0; i < e->e_shnum; i++)
+	for (i = 0; i < g16(e->e_shnum, msb); i++)
 	{
-		if (s[i].sh_type == SHT_SYMTAB)
+		if (g32(s[i].sh_type, msb) == SHT_SYMTAB)
 		{
-			sym = (Elf32_Sym *)((char *)map + s[i].sh_offset);
-			num = s[i].sh_size / sizeof(Elf32_Sym);
-			str = (char *)map + s[s[i].sh_link].sh_offset;
+			sym = (Elf32_Sym *)((char *)map + g32(s[i].sh_offset, msb));
+			num = g32(s[i].sh_size, msb) / sizeof(Elf32_Sym);
+			str = (char *)map + g32(s[g32(s[i].sh_link, msb)].sh_offset, msb);
 			break;
 		}
 	}
@@ -30,40 +31,41 @@ void print_syms_32(void *map)
 	}
 	for (i = 0; i < num; i++)
 	{
-		name = str + sym[i].st_name;
+		name = str + g32(sym[i].st_name, msb);
 		if (!name || name[0] == '\0' ||
 		    ELF32_ST_TYPE(sym[i].st_info) == STT_SECTION ||
 		    ELF32_ST_TYPE(sym[i].st_info) == STT_FILE)
 			continue;
-		type = get_sym_type_32(&sym[i], s);
-		if (sym[i].st_shndx == SHN_UNDEF || type == 'U' || type == 'w' ||
-		    type == 'v')
+		type = get_sym_type_32(&sym[i], s, msb);
+		if (g16(sym[i].st_shndx, msb) == SHN_UNDEF || type == 'U' ||
+		    type == 'w' || type == 'v')
 			printf("         %c %s\n", type, name);
 		else
-			printf("%08x %c %s\n", sym[i].st_value, type, name);
+			printf("%08x %c %s\n", g32(sym[i].st_value, msb), type, name);
 	}
 }
 
 /**
  * print_syms_64 - Prints the symbols for a 64-bit ELF file.
  * @map: The mapped memory of the ELF file.
+ * @msb: Endianness flag.
  */
-void print_syms_64(void *map)
+void print_syms_64(void *map, int msb)
 {
 	Elf64_Ehdr *e = (Elf64_Ehdr *)map;
-	Elf64_Shdr *s = (Elf64_Shdr *)((char *)map + e->e_shoff);
+	Elf64_Shdr *s = (Elf64_Shdr *)((char *)map + g64(e->e_shoff, msb));
 	Elf64_Sym *sym = NULL;
 	char *str = NULL, *name;
 	int num = 0, i;
 	char type;
 
-	for (i = 0; i < e->e_shnum; i++)
+	for (i = 0; i < g16(e->e_shnum, msb); i++)
 	{
-		if (s[i].sh_type == SHT_SYMTAB)
+		if (g32(s[i].sh_type, msb) == SHT_SYMTAB)
 		{
-			sym = (Elf64_Sym *)((char *)map + s[i].sh_offset);
-			num = s[i].sh_size / sizeof(Elf64_Sym);
-			str = (char *)map + s[s[i].sh_link].sh_offset;
+			sym = (Elf64_Sym *)((char *)map + g64(s[i].sh_offset, msb));
+			num = g64(s[i].sh_size, msb) / sizeof(Elf64_Sym);
+			str = (char *)map + g64(s[g32(s[i].sh_link, msb)].sh_offset, msb);
 			break;
 		}
 	}
@@ -74,17 +76,17 @@ void print_syms_64(void *map)
 	}
 	for (i = 0; i < num; i++)
 	{
-		name = str + sym[i].st_name;
+		name = str + g32(sym[i].st_name, msb);
 		if (!name || name[0] == '\0' ||
 		    ELF64_ST_TYPE(sym[i].st_info) == STT_SECTION ||
 		    ELF64_ST_TYPE(sym[i].st_info) == STT_FILE)
 			continue;
-		type = get_sym_type_64(&sym[i], s);
-		if (sym[i].st_shndx == SHN_UNDEF || type == 'U' || type == 'w' ||
-		    type == 'v')
+		type = get_sym_type_64(&sym[i], s, msb);
+		if (g16(sym[i].st_shndx, msb) == SHN_UNDEF || type == 'U' ||
+		    type == 'w' || type == 'v')
 			printf("                 %c %s\n", type, name);
 		else
-			printf("%016lx %c %s\n", sym[i].st_value, type, name);
+			printf("%016lx %c %s\n", g64(sym[i].st_value, msb), type, name);
 	}
 }
 
@@ -97,7 +99,7 @@ void print_syms_64(void *map)
  */
 int process_file(const char *filename, int multi)
 {
-	int fd, err = 0;
+	int fd, err = 0, msb;
 	struct stat st;
 	void *map;
 	unsigned char *ident;
@@ -130,10 +132,11 @@ int process_file(const char *filename, int multi)
 	{
 		if (multi)
 			printf("\n%s:\n", filename);
+		msb = ident[EI_DATA] == ELFDATA2MSB;
 		if (ident[EI_CLASS] == ELFCLASS32)
-			print_syms_32(map);
+			print_syms_32(map, msb);
 		else if (ident[EI_CLASS] == ELFCLASS64)
-			print_syms_64(map);
+			print_syms_64(map, msb);
 	}
 	munmap(map, st.st_size);
 	close(fd);

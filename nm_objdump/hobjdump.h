@@ -30,5 +30,10 @@ void print_flags(uint32_t flags);
 int process_32(void *map, const char *filename);
 int process_64(void *map, const char *filename);
 int process_file(const char *filename);
+uint16_t g16(uint16_t x, int msb);
+uint32_t g32(uint32_t x, int msb);
+uint64_t g64(uint64_t x, int msb);
+const char *get_fmt(int cls, int msb, int mach);
+const char *get_arch(int mach);
 
 #endif /* HOBJDUMP_H */

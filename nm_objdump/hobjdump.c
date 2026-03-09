@@ -10,20 +10,27 @@
 int process_32(void *map, const char *filename)
 {
 	Elf32_Ehdr *e = (Elf32_Ehdr *)map;
-	Elf32_Shdr *s = (Elf32_Shdr *)((char *)map + e->e_shoff);
-	char *strtab = (char *)map + s[e->e_shstrndx].sh_offset;
+	int m = e->e_ident[EI_DATA] == ELFDATA2MSB;
+	Elf32_Shdr *s = (Elf32_Shdr *)((char *)map + g32(e->e_shoff, m));
+	char *strtab = (char *)map + g32(s[g16(e->e_shstrndx, m)].sh_offset, m);
+	uint32_t flags = D_PAGED | EXEC_P | HAS_SYMS;
 	char *name;
 	int i;
 
-	printf("\n%s:     file format elf32-i386\n", filename);
-	printf("architecture: i386, flags 0x%08x:\n", D_PAGED | EXEC_P | HAS_SYMS);
-	print_flags(D_PAGED | EXEC_P | HAS_SYMS);
-	printf("start address 0x%08x\n\n", e->e_entry);
-
-	for (i = 0; i < e->e_shnum; i++)
+	if (g16(e->e_type, m) == ET_DYN)
+		flags = D_PAGED | DYNAMIC | HAS_SYMS;
+	else if (g16(e->e_type, m) == ET_REL)
+		flags = HAS_RELOC | HAS_SYMS;
+	printf("\n%s:     file format %s\n", filename,
+	       get_fmt(e->e_ident[EI_CLASS], m, g16(e->e_machine, m)));
+	printf("architecture: %s, flags 0x%08x:\n",
+	       get_arch(g16(e->e_machine, m)), flags);
+	print_flags(flags);
+	printf("start address 0x%08x\n\n", g32(e->e_entry, m));
+	for (i = 0; i < g16(e->e_shnum, m); i++)
 	{
-		name = strtab + s[i].sh_name;
-		if (s[i].sh_size == 0 || s[i].sh_type == SHT_NOBITS)
+		name = strtab + g32(s[i].sh_name, m);
+		if (g32(s[i].sh_size, m) == 0 || g32(s[i].sh_type, m) == SHT_NOBITS)
 			continue;
 		if (strcmp(name, ".shstrtab") == 0 || strcmp(name, ".symtab") == 0 ||
 		    strcmp(name, ".strtab") == 0)
@@ -31,8 +38,8 @@ int process_32(void *map, const char *filename)
 		if (name[0] == '\0')
 			continue;
 		printf("Contents of section %s:\n", name);
-		print_hex_ascii((unsigned char *)map + s[i].sh_offset,
-				s[i].sh_size, s[i].sh_addr);
+		print_hex_ascii((unsigned char *)map + g32(s[i].sh_offset, m),
+				g32(s[i].sh_size, m), g32(s[i].sh_addr, m));
 	}
 	return (0);
 }
@@ -47,25 +54,27 @@ int process_32(void *map, const char *filename)
 int process_64(void *map, const char *filename)
 {
 	Elf64_Ehdr *e = (Elf64_Ehdr *)map;
-	Elf64_Shdr *s = (Elf64_Shdr *)((char *)map + e->e_shoff);
-	char *strtab = (char *)map + s[e->e_shstrndx].sh_offset;
+	int m = e->e_ident[EI_DATA] == ELFDATA2MSB;
+	Elf64_Shdr *s = (Elf64_Shdr *)((char *)map + g64(e->e_shoff, m));
+	char *strtab = (char *)map + g64(s[g16(e->e_shstrndx, m)].sh_offset, m);
 	uint32_t flags = D_PAGED | EXEC_P | HAS_SYMS;
 	char *name;
 	int i;
 
-	if (e->e_type == ET_DYN)
+	if (g16(e->e_type, m) == ET_DYN)
 		flags = D_PAGED | DYNAMIC | HAS_SYMS;
-	else if (e->e_type == ET_REL)
+	else if (g16(e->e_type, m) == ET_REL)
 		flags = HAS_RELOC | HAS_SYMS;
-	printf("\n%s:     file format elf64-x86-64\n", filename);
-	printf("architecture: i386:x86-64, flags 0x%08x:\n", flags);
+	printf("\n%s:     file format %s\n", filename,
+	       get_fmt(e->e_ident[EI_CLASS], m, g16(e->e_machine, m)));
+	printf("architecture: %s, flags 0x%08x:\n",
+	       get_arch(g16(e->e_machine, m)), flags);
 	print_flags(flags);
-	printf("start address 0x%016lx\n\n", (unsigned long)e->e_entry);
-
-	for (i = 0; i < e->e_shnum; i++)
+	printf("start address 0x%016lx\n\n", (unsigned long)g64(e->e_entry, m));
+	for (i = 0; i < g16(e->e_shnum, m); i++)
 	{
-		name = strtab + s[i].sh_name;
-		if (s[i].sh_size == 0 || s[i].sh_type == SHT_NOBITS)
+		name = strtab + g32(s[i].sh_name, m);
+		if (g64(s[i].sh_size, m) == 0 || g32(s[i].sh_type, m) == SHT_NOBITS)
 			continue;
 		if (strcmp(name, ".shstrtab") == 0 || strcmp(name, ".symtab") == 0 ||
 		    strcmp(name, ".strtab") == 0 || strcmp(name, ".bss") == 0)
@@ -73,8 +82,9 @@ int process_64(void *map, const char *filename)
 		if (name[0] == '\0')
 			continue;
 		printf("Contents of section %s:\n", name);
-		print_hex_ascii((unsigned char *)map + s[i].sh_offset,
-				s[i].sh_size, s[i].sh_addr != 0 ? s[i].sh_addr : 0);
+		print_hex_ascii((unsigned char *)map + g64(s[i].sh_offset, m),
+				g64(s[i].sh_size, m), g64(s[i].sh_addr, m) != 0 ?
+				g64(s[i].sh_addr, m) : 0);
 	}
 	return (0);
 }

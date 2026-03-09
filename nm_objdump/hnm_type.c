@@ -59,43 +59,47 @@ char get_sym_type_common(int bind, int type, uint16_t shndx, uint32_t sh_type,
  * get_sym_type_32 - Gets the symbol type character for 32-bit ELF.
  * @sym: The 32-bit symbol.
  * @shdr: The 32-bit section headers.
+ * @msb: Endianness flag.
  *
  * Return: The character representing the symbol type.
  */
-char get_sym_type_32(Elf32_Sym *sym, Elf32_Shdr *shdr)
+char get_sym_type_32(Elf32_Sym *sym, Elf32_Shdr *shdr, int msb)
 {
 	int bind = ELF32_ST_BIND(sym->st_info);
 	int type = ELF32_ST_TYPE(sym->st_info);
 	uint32_t sh_t = 0, sh_f = 0;
+	uint16_t shndx = g16(sym->st_shndx, msb);
 
-	if (sym->st_shndx < SHN_LORESERVE)
+	if (shndx < SHN_LORESERVE)
 	{
-		sh_t = shdr[sym->st_shndx].sh_type;
-		sh_f = shdr[sym->st_shndx].sh_flags;
+		sh_t = g32(shdr[shndx].sh_type, msb);
+		sh_f = g32(shdr[shndx].sh_flags, msb);
 	}
 
-	return (get_sym_type_common(bind, type, sym->st_shndx, sh_t, sh_f));
+	return (get_sym_type_common(bind, type, shndx, sh_t, sh_f));
 }
 
 /**
  * get_sym_type_64 - Gets the symbol type character for 64-bit ELF.
  * @sym: The 64-bit symbol.
  * @shdr: The 64-bit section headers.
+ * @msb: Endianness flag.
  *
  * Return: The character representing the symbol type.
  */
-char get_sym_type_64(Elf64_Sym *sym, Elf64_Shdr *shdr)
+char get_sym_type_64(Elf64_Sym *sym, Elf64_Shdr *shdr, int msb)
 {
 	int bind = ELF64_ST_BIND(sym->st_info);
 	int type = ELF64_ST_TYPE(sym->st_info);
 	uint32_t sh_t = 0;
 	uint64_t sh_f = 0;
+	uint16_t shndx = g16(sym->st_shndx, msb);
 
-	if (sym->st_shndx < SHN_LORESERVE)
+	if (shndx < SHN_LORESERVE)
 	{
-		sh_t = shdr[sym->st_shndx].sh_type;
-		sh_f = shdr[sym->st_shndx].sh_flags;
+		sh_t = g32(shdr[shndx].sh_type, msb);
+		sh_f = g64(shdr[shndx].sh_flags, msb);
 	}
 
-	return (get_sym_type_common(bind, type, sym->st_shndx, sh_t, sh_f));
+	return (get_sym_type_common(bind, type, shndx, sh_t, sh_f));
 }
