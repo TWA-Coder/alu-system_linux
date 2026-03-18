@@ -40,7 +40,7 @@ int setup_server(void)
 }
 
 /**
- * main - Opens an IPv4/TCP socket, listens, accepts connection, and receives msg
+ * main - Opens socket, listens, accepts connection, receives msg
  *
  * Return: EXIT_SUCCESS or EXIT_FAILURE
  */
@@ -51,13 +51,14 @@ int main(void)
 	socklen_t client_len = sizeof(client_addr);
 	char buffer[1024];
 	ssize_t bytes_read;
+	struct sockaddr *client_addr_ptr = (struct sockaddr *)&client_addr;
 
 	setbuf(stdout, NULL);
 	sockfd = setup_server();
 	if (sockfd == -1)
 		return (EXIT_FAILURE);
 	printf("Server listening on port 12345\n");
-	client_fd = accept(sockfd, (struct sockaddr *)&client_addr, &client_len);
+	client_fd = accept(sockfd, client_addr_ptr, &client_len);
 	if (client_fd == -1)
 	{
 		perror("accept");
