@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror -pedantic
 
-all: todo_api_0 todo_api_1 todo_api_2 todo_api_3 todo_api_4
+all: todo_api_0 todo_api_1 todo_api_2 todo_api_3 todo_api_4 todo_api_5
 
 todo_api_0: todo_api_0.c
 	$(CC) $(CFLAGS) -o $@ $^
@@ -16,4 +16,7 @@ todo_api_3: todo_api_3.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 todo_api_4: todo_api_4.c todo_api_4_handlers.c todo_api_4_db.c
+	$(CC) $(CFLAGS) -o $@ $^
+
+todo_api_5: todo_api_5.c todo_api_5_utils.c todo_api_5_db.c
 	$(CC) $(CFLAGS) -o $@ $^
