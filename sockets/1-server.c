@@ -23,37 +23,27 @@ int main(void)
 		perror("socket");
 		return (EXIT_FAILURE);
 	}
-
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(12345);
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
 	if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
 	{
 		perror("bind");
-		close(sockfd);
 		return (EXIT_FAILURE);
 	}
-
 	if (listen(sockfd, 10) == -1)
 	{
 		perror("listen");
-		close(sockfd);
 		return (EXIT_FAILURE);
 	}
-
 	printf("Server listening on port 12345\n");
-
 	client_fd = accept(sockfd, (struct sockaddr *)&client_addr, &client_len);
 	if (client_fd == -1)
 	{
 		perror("accept");
-		close(sockfd);
 		return (EXIT_FAILURE);
 	}
-
 	printf("Client connected: %s\n", inet_ntoa(client_addr.sin_addr));
-
 	close(client_fd);
 	close(sockfd);
 	return (EXIT_SUCCESS);
