@@ -31,19 +31,19 @@ int main(int argc, char *argv[], char *envp[])
 
 	if (pid == 0)
 	{
-		printf("59\n"); /* execve syscall number */
 		ptrace(PTRACE_TRACEME, pid, NULL, NULL);
 		execve(argv[1], argv + 1, envp);
 	}
 	else
 	{
-		for (status = 1, print = 0; !WIFEXITED(status); print ^= 1)
+		wait(&status);
+		for (print = 1; !WIFEXITED(status); print ^= 1)
 		{
-			ptrace(PT_SYSCALL, pid, NULL, NULL);
-			wait(&status);
 			ptrace(PT_GETREGS, pid, NULL, &regs);
 			if (print)
 				printf("%lu\n", (size_t)regs.orig_rax);
+			ptrace(PT_SYSCALL, pid, NULL, NULL);
+			wait(&status);
 		}
 	}
 
