@@ -37,13 +37,19 @@ int main(int argc, char *argv[], char *envp[])
 	else
 	{
 		wait(&status);
+		if (WIFEXITED(status))
+			return (0);
+		ptrace(PT_GETREGS, pid, NULL, &regs);
+		printf("%lu\n", (size_t)regs.orig_rax);
 		for (print = 1; !WIFEXITED(status); print ^= 1)
 		{
+			ptrace(PT_SYSCALL, pid, NULL, NULL);
+			wait(&status);
+			if (WIFEXITED(status))
+				break;
 			ptrace(PT_GETREGS, pid, NULL, &regs);
 			if (print)
 				printf("%lu\n", (size_t)regs.orig_rax);
-			ptrace(PT_SYSCALL, pid, NULL, NULL);
-			wait(&status);
 		}
 	}
 
